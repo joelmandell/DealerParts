@@ -1,0 +1,72 @@
+﻿@model IPublishedContent;
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title> @Model.Name - Dealer parts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <!-- Navbar -->
+    <nav class="bg-blue-500 py-4">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <a href="/" class="text-white font-bold text-xl">Home</a>
+                </div>
+                <div>
+                    @{
+                        if(MemberManager.IsLoggedIn())
+                        {
+                            <span class="text-white">👋 @httpContextAccessor?.HttpContext?.User?.FindFirst("CrmUserName")?.Value</span>
+                        }
+                    }
+                </div>
+                <div>
+                    <ul class="flex space-x-4">
+                        @{
+                            UmbracoContextAccessor.TryGetUmbracoContext(out var ctx);
+
+                            var selection = ctx?.Content?.GetAtRoot()?.
+                                            FirstOrDefault()?.
+                                            Children().
+                                            ToAsyncEnumerable().
+                                            WhereAwait(async (x) => {
+                                                return x.IsVisible() 
+                                                    && await MemberManager.MemberHasAccessAsync(x.Path)
+                                                    && (((IPageSettings)x).HideIfAuthed ? !MemberManager.IsLoggedIn() : true);
+                                            }) ?? Enumerable.Empty<PublishedContentBase>().ToAsyncEnumerable();
+                        }
+                        @await foreach (var item in selection)
+                        {
+                            <li>
+                                <a class="text-white hover:text-gray-200" href="@item.Url()">@item.Name()</a>
+                            </li>
+                        }
+                        @{
+                            if (MemberManager.IsLoggedIn())
+                            {
+                                <li>
+                                    <a class="text-black p-2 border-0 font-bold bg-slate-50" href="/SignOut">Sign Out</a>
+                                </li>
+                            }
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content Area -->
+    <div class="bottom-16 container mx-auto px-4 py-8">
+        @RenderBody()
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-200 py-4 fixed bottom-0 w-full">
+        <div class="container mx-auto px-4">
+            @Html.Raw(string.Join("<br />",httpContextAccessor?.HttpContext?.User.Claims.Select(x => x.Value) ?? Enumerable.Empty<string>()))
+        </div>
+    </footer>
+</body>
+</html>

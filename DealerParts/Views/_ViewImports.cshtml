@@ -1,0 +1,16 @@
+@using Umbraco.Cms.Core.Security;
+@using Umbraco.Cms.Core.Web;
+@using Umbraco.Extensions
+@using DealerParts
+@using Umbraco.Cms.Web.Common.PublishedModels
+@using Umbraco.Cms.Web.Common.Views
+@using Umbraco.Cms.Core.Models.PublishedContent
+@using Microsoft.AspNetCore.Html
+@using DealerParts.Models.Generated;
+@using Microsoft.AspNetCore.Http
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, Smidge
+@inject Smidge.SmidgeHelper SmidgeHelper
+@inject IUmbracoContextAccessor UmbracoContextAccessor
+@inject IMemberManager MemberManager
+@inject IHttpContextAccessor httpContextAccessor;

@@ -1,0 +1,9 @@
+﻿@model StandardPage
+
+<h1 class="mb-6 text-4xl">@Model.Header</h1>
+
+<p class="mb-6 font-bold">
+    @Html.Raw(Model.Preamble)
+</p>
+
+@Html.Raw(Model.Body)
