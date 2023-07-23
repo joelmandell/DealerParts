@@ -20,6 +20,7 @@ namespace DealerParts.Custom
             var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
 
             var customUser = new MemberIdentityUser();
+            customUser.Id = userId;
             customUser.UserName = ClaimConstants.CrmUser;
             customUser.IsApproved = true;
 
