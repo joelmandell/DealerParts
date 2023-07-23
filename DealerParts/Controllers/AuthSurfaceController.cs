@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DealerParts.Custom;
+using DealerParts.Services;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Logging;
@@ -17,11 +19,13 @@ namespace DealerParts.Controllers
     {
         private readonly IMemberSignInManager memberSignInManager;
         private readonly IMemberManager memberManager;
+        private readonly CrmService crmService;
 
-        public AuthSurfaceController(IUmbracoContextAccessor umbracoContextAccessor, IUmbracoDatabaseFactory databaseFactory, ServiceContext services, AppCaches appCaches, IProfilingLogger profilingLogger, IPublishedUrlProvider publishedUrlProvider, IMemberSignInManager memberSignInManager, IMemberManager memberManager) : base(umbracoContextAccessor, databaseFactory, services, appCaches, profilingLogger, publishedUrlProvider)
+        public AuthSurfaceController(IUmbracoContextAccessor umbracoContextAccessor, IUmbracoDatabaseFactory databaseFactory, ServiceContext services, AppCaches appCaches, IProfilingLogger profilingLogger, IPublishedUrlProvider publishedUrlProvider, IMemberSignInManager memberSignInManager, IMemberManager memberManager, CrmService crmService) : base(umbracoContextAccessor, databaseFactory, services, appCaches, profilingLogger, publishedUrlProvider)
         {
             this.memberSignInManager = memberSignInManager;
             this.memberManager = memberManager;
+            this.crmService = crmService;
         }
 
         [HttpGet]
@@ -41,34 +45,28 @@ namespace DealerParts.Controllers
                 return CurrentUmbracoPage();
             }
 
-            var crmUser = await memberManager.FindByNameAsync("CrmUser");
+            var crmAuthorized = await crmService.SignIn(model?.Username!, model?.Password!);
 
-            var role = "";
-            var crmUserName = "";
-
-            switch (model.Password)
+            if (!crmAuthorized.Success)
             {
-                case "admin":
-                    role = "Dealership Administrators";
-                    crmUserName = "Got Rootson";
-                    break;
-                case "customer":
-                    role = "Retail Customers";
-                    crmUserName = "Sir Buy Alot";
-                    break;
-                default:
-                    role = "Parts Department Staff";
-                    crmUserName = "Mr Always Employee of the month";
-                    break;
+                ModelState.AddModelError(string.Empty, "Wrong credentials");
+                return CurrentUmbracoPage();
             }
 
-            var customClaims = new List<Claim>
+            var crmUser = await memberManager.FindByNameAsync(ClaimConstants.CrmUser);
+
+            var customRoles = new List<Claim>
             {
-                new(ClaimTypes.Role, role),
-                new("CrmUserName",crmUserName)
+                new(ClaimTypes.Role, crmAuthorized?.Role ?? ""),
+                new(ClaimConstants.CrmClaimUserName, crmAuthorized?.UserName ?? ""),
             };
 
-            await (memberSignInManager as MemberSignInManager)!.SignInWithClaimsAsync(crmUser!, true, customClaims);
+            foreach(var claim in customRoles)
+            {
+                crmUser.Claims.Add(new() { ClaimType = claim.Type, ClaimValue = claim.Value, UserId = crmUser?.Id });
+            }
+
+            await memberSignInManager.SignInAsync(crmUser!, true);
 
             return Redirect("/");
         }

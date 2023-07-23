@@ -1,4 +1,5 @@
 using DealerParts.Custom;
+using DealerParts.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
@@ -36,6 +37,7 @@ namespace DealerParts
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHttpContextAccessor();
+            services.AddSingleton<CrmService, CrmService>();
 
             services.AddUmbraco(_env, _config)
                 .AddBackOffice()
@@ -43,7 +45,7 @@ namespace DealerParts
                 .AddDeliveryApi()
                 .AddComposers()
                 .Build();
-            
+
             services.AddScoped<IMemberManager, CustomMemberManager>();
         }
 
